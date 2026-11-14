@@ -9,6 +9,8 @@ import { paperUploaded, uploadPaper, useAuthUser } from '../lib/cloud';
 import { useTeacherOnScreen } from '../lib/viewAs';
 import { ExamQuestion, PaperType } from '../types/chemistry';
 import { ChemText } from './common/ChemText';
+import { AnswerPad } from './AnswerPad';
+import { keepValue } from '../lib/accountCopy';
 import { ExamModeView } from './ExamModeView';
 import { MockTestsView } from './MockTestsView';
 import {
@@ -214,6 +216,23 @@ export const ExamPrepView: React.FC = () => {
 
   const toggleRevealMarkScheme = (qId: string) => {
     setRevealedMarkSchemes(prev => ({ ...prev, [qId]: !prev[qId] }));
+  };
+
+  // A structured (Paper 4 or 6) question: the student writes an answer and submits it; only then does the mark scheme open.
+  // The same rule and the same keys as the lesson questions (CurriculumView), so an answer given in one place counts in the
+  // other. The answer itself is kept by AnswerPad on this device and on the account.
+  const [submittedAnswers, setSubmittedAnswers] = useState<Record<string, boolean>>({});
+  const isSubmitted = (qId: string): boolean => {
+    if (submittedAnswers[qId] !== undefined) return submittedAnswers[qId];
+    try {
+      return window.localStorage.getItem(`chem_submitted_${qId}`) === '1';
+    } catch {
+      return false;
+    }
+  };
+  const submitStructured = (qId: string) => {
+    keepValue(`chem_submitted_${qId}`, '1');
+    setSubmittedAnswers(prev => ({ ...prev, [qId]: true }));
   };
 
   const resetAllProgress = () => {
@@ -721,7 +740,31 @@ export const ExamPrepView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Structured Theory / Practical: Mark Scheme & Model Answer Reveal */}
+                {/* Structured theory / practical: the answer box (written answer and whiteboard), then Submit */}
+                {q.type !== 'mcq' && (
+                  <div className="space-y-3">
+                    <AnswerPad questionId={q.id} mn={mode === 'mn'} />
+                    {!isSubmitted(q.id) && (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => submitStructured(q.id)}
+                          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors"
+                        >
+                          {mode === 'mn' ? 'Хариултаа илгээх' : 'Submit my answer'}
+                        </button>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {mode === 'mn'
+                            ? 'Хариултаа илгээсний дараа шалгуур, загвар хариулт нээгдэнэ.'
+                            : 'The mark scheme and model answer open once you submit your answer.'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Mark scheme and model answer: for a structured question only after the answer is submitted */}
+                {(q.type === 'mcq' || isSubmitted(q.id)) && (
                 <div className="pt-2">
                   <button
                     onClick={() => toggleRevealMarkScheme(q.id)}
@@ -794,6 +837,7 @@ export const ExamPrepView: React.FC = () => {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             );
           })
