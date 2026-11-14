@@ -78,6 +78,7 @@ import { CHANGED_KEY, EXPORTED_KEY, makeReport, downloadText, readStored, writeS
 import { StudentProgressCard } from './StudentProgressCard';
 import { StudentAccount } from './StudentAccount';
 import { isTeacher, requestEnrollment, saveStudentProgress, useAuthUser, useEnrollment } from '../lib/cloud';
+import { usePreviewAccess, useTeacherOnScreen } from '../lib/viewAs';
 import { EnrollmentGate } from './EnrollmentGate';
 import { CourseSwitch } from './CourseSwitch';
 import {
@@ -207,6 +208,9 @@ export const CurriculumView: React.FC = () => {
 
   // Signed-in students: the teacher's copy follows every tick and name change
   const { user: authUser } = useAuthUser();
+  // The teacher's account looking at the site as a student: the access it previews ('gated' or 'full'), else null
+  const previewAccess = usePreviewAccess(authUser);
+  const teacherOnScreen = useTeacherOnScreen(authUser);
   // The student's enrollment in the programme on screen: none, requested, rejected or approved
   const enrollment = useEnrollment(authUser?.uid, courseChoice);
   // A signed-in IGCSE student with a track sees that track's content: Core, or Core with Extended. Teachers and visitors,
@@ -332,7 +336,10 @@ export const CurriculumView: React.FC = () => {
   // Access: the teacher sees every lesson. A guest and a gated student open the lessons one after another: the first
   // lesson of the course is open, and each next one opens when the one before it is passed. A signed-in student sees a
   // programme's lessons only once the teacher has approved their enrollment in it. Full access opens them all.
-  const access: 'open' | 'gated' | 'none' | 'pending' = authUser && isTeacher(authUser)
+  // The teacher's account looking at the site as a student (lib/viewAs) gets that student's access: gated or full.
+  const access: 'open' | 'gated' | 'none' | 'pending' = previewAccess
+    ? (previewAccess === 'full' ? 'open' : 'gated')
+    : authUser && isTeacher(authUser)
     ? 'open'
     : !authUser
       ? 'gated'
@@ -1081,7 +1088,7 @@ export const CurriculumView: React.FC = () => {
             mn={mode === 'mn'}
             unlocked={!!authUser && (access === 'open' || access === 'gated')}
             lessonPassed={n => lessonPassed(currentTopic.chapterId, n)}
-            printApproved={!!authUser && (isTeacher(authUser) || (enrollment?.printChapters ?? []).includes(currentTopic.chapterId))}
+            printApproved={!!authUser && (teacherOnScreen || (enrollment?.printChapters ?? []).includes(currentTopic.chapterId))}
           />
         )}
         {/* The free simulations and the virtual lab for this topic, under the slides */}

@@ -3,6 +3,7 @@ import { ListChecks } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useLanguage } from '../context/LanguageContext';
 import { isTeacher, useAuthUser, useEnrollment } from '../lib/cloud';
+import { usePreviewAccess, useTeacherOnScreen } from '../lib/viewAs';
 import { chapterProgress, useSelfCheck, type Level } from '../lib/selfCheck';
 import { buildChecklist, chaptersOf, readChecklistState, useChecklistTick, type Checklist } from '../lib/chapterChecklist';
 import { ChapterChecklist } from './ChapterChecklist';
@@ -14,9 +15,12 @@ export const useMyChecklist = (): Checklist => {
   const { user } = useAuthUser();
   const teacher = !!user && isTeacher(user);
   const enrollment = useEnrollment(user && !teacher ? user.uid : undefined, courseChoice);
-  // A Core IGCSE student is counted on the Core lessons and objectives; full access (and the teacher) opens every lesson
+  // A Core IGCSE student is counted on the Core lessons and objectives; full access (and the teacher's own view) opens
+  // every lesson. The teacher looking at the site as a student (lib/viewAs) gets that student's access.
   const level: Level = courseChoice === 'igcse' && enrollment?.track === 'core' ? 'core' : 'extended';
-  const allOpen = teacher || enrollment?.access === 'full';
+  const teacherOnScreen = useTeacherOnScreen(user);
+  const previewAccess = usePreviewAccess(user);
+  const allOpen = teacherOnScreen || previewAccess === 'full' || enrollment?.access === 'full';
   const selfCheck = useSelfCheck();
   const tick = useChecklistTick();
   return useMemo(() => {

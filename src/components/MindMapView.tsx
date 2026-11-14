@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
 import { ChemText } from './common/ChemText';
-import { isTeacher, useAuthUser } from '../lib/cloud';
+import { useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 import { courseTopics } from '../data/courseScope';
 import {
   MIND_MAP_GLOSSARY,
@@ -148,7 +149,8 @@ export const MindMapView: React.FC = () => {
   const studiedTopics = courseTopics(courseChoice).filter(t => stats.completedTopics.includes(t.id));
   // The mind map can be exported as a file for the teacher account only
   const { user } = useAuthUser();
-  const teacher = isTeacher(user);
+  // The teacher's own view only; looking at the site as a student (lib/viewAs) it is hidden, as for a student
+  const teacher = useTeacherOnScreen(user);
 
   // Template & Storage
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('tpl-overview');

@@ -1,7 +1,8 @@
 import React, { useLayoutEffect, useState } from 'react';
 import { ClipboardCheck, Clock, ExternalLink, Download, Lock, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { isTeacher, useAuthUser } from '../lib/cloud';
+import { useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 import { COURSE_CHOICES, useApp } from '../context/AppContext';
 import { CourseNotReady } from './CourseNotReady';
 import { CHAPTER_TESTS, testUnlocked } from '../data/chapterTests';
@@ -15,7 +16,8 @@ export const TestsView: React.FC = () => {
   const { mode } = useLanguage();
   const mn = mode === 'mn';
   const { user } = useAuthUser();
-  const teacher = isTeacher(user);
+  // The teacher's own view opens every test; looking at the site as a student (lib/viewAs) it does not
+  const teacher = useTeacherOnScreen(user);
   const { courseChoice, stats, addTestAttempt } = useApp();
   const courseName = COURSE_CHOICES.find(c => c.id === courseChoice)?.labelEn ?? '';
   // Only the tests of the course being studied

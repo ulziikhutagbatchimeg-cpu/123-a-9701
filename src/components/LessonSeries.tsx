@@ -31,7 +31,8 @@ import { quickCheckFor } from '../lib/quickCheck';
 import { StepSticker } from './StepSticker';
 import { LessonCelebration } from './LessonCelebration';
 import { CURRICULUM_CHAPTERS } from '../data/curriculumData';
-import { isTeacher, useAuthUser } from '../lib/cloud';
+import { useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 import { pinLesson } from '../lib/notebook';
 import type { LabNext } from './LabFrame';
 import { useStudyTime } from '../lib/studyTime';
@@ -149,7 +150,8 @@ export const LessonSeries: React.FC<{
     return () => window.removeEventListener(KEPT_RESTORED, read);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]);
-  const teacherAccount = !!pinUser && isTeacher(pinUser);
+  // The teacher's own view opens every step; looking at the site as a student (lib/viewAs) it does not
+  const teacherAccount = useTeacherOnScreen(pinUser);
   const free = allOpen || teacherAccount || (scores[currentId] ?? -1) > UNLOCK_ABOVE;
   // The parts of the lesson to finish, in order: the prediction, each scored simulation, the quick check and the practice.
   // Each step opens once every part before it is done, and the exit ticket once all of them are. The teacher, full-access

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CHAPTER_SLIDES, courseOf, deckTitle, type SlideDeck } from '../data/chapterSlides';
 import { getDeckUrl, isTeacher, signInTeacher, signOutUser, uploadDeck, useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { SlideViewer } from './SlideViewer';
 import { printDeck, printDecks } from '../lib/slidePrint';
@@ -124,7 +125,8 @@ export const ChapterSlides: React.FC<{
   printApproved?: boolean;
 }> = ({ chapterId, mn, unlocked, lessonPassed, printApproved }) => {
   const { user, ready } = useAuthUser();
-  const teacher = isTeacher(user);
+  // The teacher's own view; looking at the site as a student (lib/viewAs), the slides open and print as for a student
+  const teacher = useTeacherOnScreen(user);
   // Printing and saving as PDF: the teacher always, a student only once the teacher has allowed this chapter
   const canPrint = teacher || !!printApproved;
   // The slides open when the curriculum says the student may see the lessons; without that, any signed-in user may see them

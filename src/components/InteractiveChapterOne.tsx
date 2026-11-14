@@ -24,7 +24,8 @@ import { recordActivity } from '../lib/activity';
 import { useStudyTime } from '../lib/studyTime';
 import { encourage } from '../lib/encourage';
 import { useApp } from '../context/AppContext';
-import { isTeacher, useAuthUser } from '../lib/cloud';
+import { useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 import { PROGRESS_RESTORED } from '../lib/progressRestore';
 import { lessonSlides, lessonStepParts, partsKey, slideRangeLabel, STATES_STEP_MINUTES, type SlidePart } from '../data/chapterSlides';
 import { SlideViewer } from './SlideViewer';
@@ -896,7 +897,8 @@ export const InteractiveChapterOne: React.FC<{
   // The steps after the quick check (Apply and check, Conclude) open once every quick-check question is answered.
   // The teacher's account sees every step. A lesson without quick-check questions keeps all its steps open.
   const { user } = useAuthUser();
-  const teacher = !!user && isTeacher(user);
+  // The teacher's own view opens every step; looking at the site as a student (lib/viewAs) it does not
+  const teacher = useTeacherOnScreen(user);
   const quickItems = QUICK_CHECKS[lesson.id] ?? [];
   const [quickDone, setQuickDone] = useState(() => readQuickDone(lesson.id, quickItems.length));
   // The steps after step 1 open once the prediction is written

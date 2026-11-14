@@ -3,7 +3,8 @@ import { ChevronDown } from 'lucide-react';
 import { COURSE_CHOICES, useApp, type CourseChoice } from '../context/AppContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SITE_COURSE } from '../lib/siteCourse';
-import { isTeacher, useAuthUser } from '../lib/cloud';
+import { useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 
 // Each programme has its own colour, so the course on screen is clear at a glance. In the top bar it is a light chip in that
 // colour (soft), so it names the course without shouting; the dot marks each course in the list.
@@ -19,8 +20,10 @@ export const CourseSwitch: React.FC = () => {
   const { mode } = useLanguage();
   const [open, setOpen] = useState(false);
   // A site locked to one course shows students its course only; the teacher's signed-in account keeps the switch
+  // Looking at the site as a student (lib/viewAs), the teacher's account is locked to the site's course as a student is
   const { user } = useAuthUser();
-  const locked = SITE_COURSE !== null && !isTeacher(user);
+  const teacherOnScreen = useTeacherOnScreen(user);
+  const locked = SITE_COURSE !== null && !teacherOnScreen;
 
   const label = (id: CourseChoice) => {
     const choice = COURSE_CHOICES.find(c => c.id === id);

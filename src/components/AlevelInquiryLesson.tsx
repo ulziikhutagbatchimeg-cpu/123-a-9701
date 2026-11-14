@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Lock } from 'lucide-react';
-import { isTeacher, useAuthUser } from '../lib/cloud';
+import { useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 import { KEPT_RESTORED } from '../lib/accountCopy';
 import { missingBefore, practiceDoneKey, termsIn, useDoneFlags, type GateItem } from '../lib/lessonGate';
 import { AboutLine, LessonChecklist, TermChips } from './LessonChecklist';
@@ -245,7 +246,9 @@ export const AlevelInquiryLesson: React.FC<{ plan: AlevelInquiryPlan; chapterId:
   const selfCheck = useSelfCheck();
   const chapterTopics = ALEVEL_CHAPTERS.find(c => c.id === chapterId)?.topics ?? [];
   const selfCheckDone = chapterProgress(chapterTopics, selfCheck).complete;
-  const free = allOpen || (!!user && isTeacher(user)) || (scores[chapterId] ?? -1) > 60;
+  // The teacher's own view opens every step; looking at the site as a student (lib/viewAs) it does not
+  const teacherOnScreen = useTeacherOnScreen(user);
+  const free = allOpen || teacherOnScreen || (scores[chapterId] ?? -1) > 60;
   const gate: GateItem[] = [
     { id: 'prediction', step: 0, done: predictionDone, label: { mn: 'Таамаглалаа бичих (1-р алхам)', en: 'Write your prediction (step 1)' } },
     ...(plan.practice.length > 0

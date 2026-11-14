@@ -5,7 +5,8 @@ import { CURRICULUM_CHAPTERS } from '../data/curriculumData';
 import { CAMBRIDGE_PAST_PAPERS_2017_2024 } from '../data/pastPapersData';
 import { OFFICIAL_PAPERS, OFFICIAL_PAST_PAPERS_PAGE } from '../data/officialPastPapers';
 import { TEACHER_PAPER_FILES } from '../data/teacherPaperFiles';
-import { isTeacher, paperUploaded, uploadPaper, useAuthUser } from '../lib/cloud';
+import { paperUploaded, uploadPaper, useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 import { ExamQuestion, PaperType } from '../types/chemistry';
 import { ChemText } from './common/ChemText';
 import { ExamModeView } from './ExamModeView';
@@ -54,7 +55,8 @@ export const ExamPrepView: React.FC = () => {
   const [view, setView] = useState<'browse' | 'exam'>('browse');
   // The teacher sees the list of paper files kept on hand, and which of them are in storage
   const { user } = useAuthUser();
-  const teacher = isTeacher(user);
+  // The teacher's own view only; looking at the site as a student (lib/viewAs) the list is hidden, as for a student
+  const teacher = useTeacherOnScreen(user);
   const [paperStatus, setPaperStatus] = useState<Record<string, boolean>>({});
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
 

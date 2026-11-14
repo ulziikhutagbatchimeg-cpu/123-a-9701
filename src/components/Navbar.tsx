@@ -8,6 +8,7 @@ import { TeacherSiteLinks } from './TeacherSiteLinks';
 import { courseMistakes } from '../data/courseScope';
 import { isTeacher, signOutUser, useAuthUser } from '../lib/cloud';
 import { isFirebaseConfigured } from '../lib/firebase';
+import { setViewAs, useViewAs, type ViewAs } from '../lib/viewAs';
 import {
   BookOpen,
   FlaskConical,
@@ -44,10 +45,25 @@ interface Tab {
 
 export const Navbar: React.FC = () => {
   const { mode, setMode } = useLanguage();
-  const { activeTab, setActiveTab, role, setRole, mistakes, courseChoice } = useApp();
-  // The teacher's pages and the view switch are for the teacher's signed-in account only
+  const { activeTab, setActiveTab, setRole, mistakes, courseChoice } = useApp();
+  // The teacher's pages and the view switch are for the teacher's signed-in account only. Looking at the site as a student
+  // (lib/viewAs), the teacher's account gets the student's bar: no Teacher page, the student's bell.
   const { user } = useAuthUser();
-  const teacherSignedIn = isTeacher(user);
+  const teacherAccount = isTeacher(user);
+  const viewAs = useViewAs();
+  const teacherSignedIn = teacherAccount && viewAs === 'teacher';
+  const VIEWS: { id: ViewAs; label: string; note: string }[] = [
+    { id: 'teacher', label: mode === 'mn' ? 'Багш' : 'Teacher', note: mode === 'mn' ? 'Бүх зүйл нээлттэй, багшийн хуудсууд' : 'Everything open, the teacher’s pages' },
+    { id: 'gated', label: mode === 'mn' ? 'Сурагч — хэсэгчилсэн' : 'Student — gated', note: mode === 'mn' ? 'Хичээл 60%-иар нэг нэгээр нээгдэнэ' : 'Lessons open one by one above 60%' },
+    { id: 'full', label: mode === 'mn' ? 'Сурагч — бүтэн' : 'Student — full', note: mode === 'mn' ? 'Бүх хичээл нээлттэй, сурагчийн дэлгэц' : 'Every lesson open, the student’s screen' }
+  ];
+  // Changes the view: the page goes Home, so the teacher sees the site from the start as that student would
+  const chooseView = (view: ViewAs) => {
+    setViewAs(view);
+    setRole(view === 'teacher' ? 'teacher' : 'student');
+    setMenuOpen(false);
+    if (view !== 'teacher' && activeTab === 'teacher') setActiveTab('dashboard');
+  };
   const mn = mode === 'mn';
   const unresolvedMistakesCount = courseMistakes(mistakes, courseChoice).filter(m => !m.resolved).length;
 
@@ -189,17 +205,33 @@ export const Navbar: React.FC = () => {
                 <div className="py-1">
                   {menuItem(<HelpCircle className="h-4 w-4" />, mn ? 'Хэрхэн суралцах вэ? (заавар)' : 'How to study here', () => go('help'))}
                   {isFirebaseConfigured && menuItem(<UserRound className="h-4 w-4" />, user ? (mn ? 'Миний данс' : 'My account') : mn ? 'Нэвтрэх' : 'Log in', () => go('login'))}
-                  {/* The teacher can see the site as a student sees it, and back */}
-                  {teacherSignedIn &&
-                    menuItem(
-                      <Repeat className="h-4 w-4" />,
-                      role === 'student' ? (mn ? 'Багшийн горимд шилжих' : 'Switch to teacher view') : mn ? 'Сурагчийн горимд шилжих' : 'Switch to student view',
-                      () => {
-                        setRole(role === 'student' ? 'teacher' : 'student');
-                        setMenuOpen(false);
-                      }
-                    )}
                 </div>
+                {/* The teacher's account: look at the site as the teacher, as a gated student or as a full-access student */}
+                {teacherAccount && (
+                  <div className="border-t border-slate-100 py-1 dark:border-slate-800">
+                    <div className="flex items-center gap-2 px-3 pb-1 pt-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
+                      <Repeat className="h-3.5 w-3.5" aria-hidden="true" />
+                      {mn ? 'Харах горим' : 'View as'}
+                    </div>
+                    {VIEWS.map(v => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => chooseView(v.id)}
+                        aria-pressed={viewAs === v.id}
+                        className="flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
+                          {viewAs === v.id && <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm text-slate-800 dark:text-slate-100">{v.label}</span>
+                          <span className="block text-[11px] text-slate-500 dark:text-slate-400">{v.note}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {/* The language: English, Mongolian, or both */}
                 <div className="border-t border-slate-100 py-1 dark:border-slate-800">
                   <div className="flex items-center gap-2 px-3 pb-1 pt-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
@@ -254,6 +286,33 @@ export const Navbar: React.FC = () => {
           {tabs.map(tabButton)}
         </nav>
       </div>
+
+      {/* The teacher's account looking at the site as a student: said on every page, with one press back */}
+      {teacherAccount && viewAs !== 'teacher' && (
+        <div className="border-t border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
+          <div className={`${width}flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs sm:px-6`}>
+            <span className="font-bold text-amber-900 dark:text-amber-200">
+              {viewAs === 'gated'
+                ? mn ? 'Сурагчийн нүдээр харж байна: хэсэгчилсэн эрх (хичээл 60%-иар нээгдэнэ)' : 'Viewing as a student: gated access (lessons open above 60%)'
+                : mn ? 'Сурагчийн нүдээр харж байна: бүтэн эрх (бүх хичээл нээлттэй)' : 'Viewing as a student: full access (every lesson open)'}
+            </span>
+            <button
+              type="button"
+              onClick={() => chooseView(viewAs === 'gated' ? 'full' : 'gated')}
+              className="rounded-md border border-amber-300 bg-white px-2 py-0.5 font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:bg-transparent dark:text-amber-200"
+            >
+              {viewAs === 'gated' ? (mn ? 'Бүтэн эрхээр харах' : 'View with full access') : mn ? 'Хэсэгчилсэн эрхээр харах' : 'View with gated access'}
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseView('teacher')}
+              className="ml-auto rounded-md bg-amber-600 px-2.5 py-0.5 font-bold text-white hover:bg-amber-500"
+            >
+              {mn ? 'Багшийн горимд буцах' : 'Back to the teacher view'}
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

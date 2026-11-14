@@ -24,6 +24,7 @@ import { Encourager } from './components/Encourager';
 import { FlaskConical } from 'lucide-react';
 import { useResultSync } from './lib/resultSync';
 import { isTeacher, requestEnrollment, signOutUser, useAuthUser, useEnrollment } from './lib/cloud';
+import { useTeacherOnScreen } from './lib/viewAs';
 import { EnrollmentGate } from './components/EnrollmentGate';
 import { isFirebaseConfigured } from './lib/firebase';
 import { SelfRatingGate } from './components/SelfRatingGate';
@@ -46,7 +47,10 @@ const AppContent: React.FC = () => {
   // The answers, quick checks, predictions and finished topics come back from the account, so the work is kept on any device
   useAccountCopy(user);
   const rated = useSelfRated(courseChoice);
-  const lessonsOpen = rated || (!!user && isTeacher(user));
+  // Looking at the site as a student (lib/viewAs), the teacher's account gets the student's pages: the self-rating first,
+  // and no Teacher page. Access and saving stay the teacher's.
+  const teacherOnScreen = useTeacherOnScreen(user);
+  const lessonsOpen = rated || teacherOnScreen;
   // The site is closed: only the teacher, and students approved for this programme, see it. Others see the sign-in or the request.
   const enrollment = useEnrollment(user?.uid, courseChoice);
   const gated = isFirebaseConfigured && !(user && (isTeacher(user) || enrollment?.status === 'approved'));
@@ -126,7 +130,7 @@ const AppContent: React.FC = () => {
         {activeTab === 'curriculum' && (
           <div className="space-y-6">
             {/* The self-rating starts the lessons; the teacher's account does not rate */}
-            {!(user && isTeacher(user)) && <SelfRatingGate />}
+            {!teacherOnScreen && <SelfRatingGate />}
             {lessonsOpen && <CurriculumView />}
           </div>
         )}
@@ -146,7 +150,7 @@ const AppContent: React.FC = () => {
         {activeTab === 'flashcards' && <FlashcardsView />}
         {activeTab === 'games' && <GameArenaView />}
         {activeTab === 'mistakes' && <MistakeNotebookView />}
-        {activeTab === 'teacher' && isTeacher(user) && <TeacherPortalView />}
+        {activeTab === 'teacher' && teacherOnScreen && <TeacherPortalView />}
         {activeTab === 'login' && isFirebaseConfigured && <LoginView />}
       </main>
 

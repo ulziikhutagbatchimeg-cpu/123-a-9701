@@ -3,7 +3,8 @@ import { BookOpen, ClipboardList, HelpCircle, Home, TrendingUp, Users } from 'lu
 import { useLanguage } from '../context/LanguageContext';
 import { useApp, type AppTab } from '../context/AppContext';
 import { HIGHLIGHT_HEADING, HIGHLIGHT_SUB } from '../lib/highlight';
-import { isTeacher, useAuthUser } from '../lib/cloud';
+import { useAuthUser } from '../lib/cloud';
+import { useTeacherOnScreen } from '../lib/viewAs';
 
 // The menus of the web, in the order of the top bar: Home, Study, Practice and My progress (and the Teacher area for the
 // teacher). Each card says who the menu is for and what is inside it. The same cards are shown for every programme: IGCSE
@@ -127,6 +128,8 @@ const PAGES: PageCard[] = [
 // The optional extra card fills the free cell beside the last page card, so the grid stays full on every width.
 export const WebStructure: React.FC<{ extra?: React.ReactNode }> = ({ extra }) => {
   const { user } = useAuthUser();
+  // The Teacher page card is for the teacher's own view; looking at the site as a student (lib/viewAs) it is hidden
+  const teacherOnScreen = useTeacherOnScreen(user);
   const { mode } = useLanguage();
   const { setActiveTab } = useApp();
   const mn = mode === 'mn';
@@ -155,7 +158,7 @@ export const WebStructure: React.FC<{ extra?: React.ReactNode }> = ({ extra }) =
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {PAGES.filter(page => page.tab !== 'teacher' || isTeacher(user)).map(page => {
+        {PAGES.filter(page => page.tab !== 'teacher' || teacherOnScreen).map(page => {
           const isOpen = openPage === page.tab;
           const items = mn ? page.itemsMn : page.itemsEn;
           return (
